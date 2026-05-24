@@ -1,0 +1,48 @@
+name: Lint Skills
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'scripts/lint_skills.py'
+      - '.github/workflows/lint-skills.yml'
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'scripts/lint_skills.py'
+      - '.github/workflows/lint-skills.yml'
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Validate SKILL.md files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run SKILL.md linter
+        run: python3 scripts/lint_skills.py
+
+      - name: Verify category folders only contain skill folders
+        run: |
+          set -e
+          for catdir in skills/*/; do
+            for entry in "$catdir"*; do
+              if [ ! -d "$entry" ]; then
+                echo "::error file=$entry::Non-directory entry in category folder $catdir"
+                exit 1
+              fi
+              if [ ! -f "$entry/SKILL.md" ]; then
+                echo "::error file=$entry::Skill folder missing SKILL.md"
+                exit 1
+              fi
+            done
+          done
+          echo "✓ Category folder structure valid"
